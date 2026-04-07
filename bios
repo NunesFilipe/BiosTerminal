@@ -1,0 +1,341 @@
+#!/usr/bin/env bash
+
+RESET="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+BLUE="\033[1;34m"
+CYAN="\033[1;36m"
+WHITE="\033[1;37m"
+BG_BLUE="\033[44m"
+BG_BLACK="\033[40m"
+
+OVMF_PATH="/usr/share/edk2/x64/OVMF.4m.fd"
+QEMU_BIN="qemu-system-x86_64"
+RAM_MB=1024
+VERSION="1.0"
+
+clear_screen() {
+    clear
+    tput civis 2>/dev/null || true
+}
+
+restore_cursor() {
+    tput cnorm 2>/dev/null || true
+    echo -e "${RESET}"
+}
+
+trap restore_cursor EXIT
+
+draw_line() {
+    local char="$1"
+    local width="${2:-60}"
+    printf '%0.s'"$char" $(seq 1 "$width")
+    echo
+}
+
+center_text() {
+    local text="$1"
+    local width="${2:-60}"
+    local textlen=${#text}
+    local pad=$(( (width - textlen) / 2 ))
+    printf "%${pad}s%s%${pad}s\n" "" "$text" ""
+}
+
+draw_header() {
+    echo
+    echo -e "${CYAN}${BOLD}"
+    echo "  ╔══════════════════════════════════════════════════════════╗"
+    echo "  ║                                                          ║"
+    echo "  ║          🖥   B I O S   T E R M I N A L                 ║"
+    echo "  ║            Testador de Pendrive Bootável                 ║"
+    echo "  ║                    v${VERSION}                                 ║"
+    echo "  ║                                                          ║"
+    echo "  ╚══════════════════════════════════════════════════════════╝"
+    echo -e "${RESET}"
+}
+
+draw_section() {
+    local title="$1"
+    echo -e "${YELLOW}${BOLD}"
+    echo "  ┌──────────────────────────────────────────────────────────┐"
+    printf  "  │  %-56s  │\n" "$title"
+    echo "  └──────────────────────────────────────────────────────────┘"
+    echo -e "${RESET}"
+}
+
+draw_footer() {
+    echo -e "${DIM}"
+    echo "  ──────────────────────────────────────────────────────────"
+    echo "  Use as teclas indicadas para navegar  │  Ctrl+C para sair"
+    echo "  ──────────────────────────────────────────────────────────"
+    echo -e "${RESET}"
+}
+
+msg_info()    { echo -e "  ${CYAN}[•]${RESET} $*"; }
+msg_ok()      { echo -e "  ${GREEN}[✔]${RESET} $*"; }
+msg_warn()    { echo -e "  ${YELLOW}[!]${RESET} $*"; }
+msg_error()   { echo -e "  ${RED}[✘]${RESET} $*"; }
+
+USB_DEVICES=()
+USB_SIZES=()
+USB_LABELS=()
+
+detect_usb_drives() {
+    USB_DEVICES=()
+    USB_SIZES=()
+    USB_LABELS=()
+
+    while IFS= read -r line; do
+        local name size tran
+        name=$(echo "$line" | grep -oP 'NAME="\K[^"]+')
+        size=$(echo "$line" | grep -oP 'SIZE="\K[^"]+')
+        tran=$(echo "$line" | grep -oP 'TRAN="\K[^"]+')
+
+        if [[ "$tran" == "usb" ]] && \
+           { [[ "$name" =~ ^sd[a-z]$ ]] || [[ "$name" =~ ^nvme[0-9]+n[0-9]+$ ]]; }; then
+            USB_DEVICES+=("/dev/$name")
+            USB_SIZES+=("$size")
+            USB_LABELS+=("")
+        fi
+    done < <(lsblk -d -P -o NAME,SIZE,TRAN 2>/dev/null)
+}
+
+get_usb_model() {
+    local dev="$1"
+    local base
+    base=$(basename "$dev")
+
+    local model_file="/sys/block/${base}/device/model"
+    if [[ -f "$model_file" ]]; then
+        cat "$model_file" | xargs
+    else
+        echo "Dispositivo USB"
+    fi
+}
+
+SELECTED_DEV=""
+
+menu_select_device() {
+    while true; do
+        clear_screen
+        draw_header
+
+        detect_usb_drives
+
+        draw_section "Pendrives USB detectados"
+
+        if [[ ${#USB_DEVICES[@]} -eq 0 ]]; then
+            msg_warn "Nenhum pendrive USB encontrado."
+            echo
+            msg_info "Conecte um pendrive e pressione qualquer tecla para reescanear..."
+            read -r -n1
+            continue
+        fi
+
+        local i
+        for i in "${!USB_DEVICES[@]}"; do
+            local dev="${USB_DEVICES[$i]}"
+            local size="${USB_SIZES[$i]}"
+            local model
+            model=$(get_usb_model "$dev")
+            local num=$(( i + 1 ))
+            echo -e "  ${BOLD}${GREEN}[$num]${RESET}  ${WHITE}${dev}${RESET}  ${CYAN}${model}${RESET}  ${DIM}(${size})${RESET}"
+        done
+
+        echo
+        echo -e "  ${BOLD}${YELLOW}[R]${RESET}  Reescanear dispositivos"
+        echo -e "  ${BOLD}${RED}[Q]${RESET}  Sair"
+        echo
+        draw_footer
+
+        tput cnorm 2>/dev/null || true
+        echo -ne "  ${BOLD}Escolha o pendrive para testar: ${RESET}"
+        local choice
+        read -r choice
+        tput civis 2>/dev/null || true
+
+        choice=$(echo "$choice" | tr '[:lower:]' '[:upper:]')
+
+        case "$choice" in
+            Q) exit 0 ;;
+            R) continue ;;
+            *)
+                if [[ "$choice" =~ ^[0-9]+$ ]]; then
+                    local idx=$(( choice - 1 ))
+                    if [[ $idx -ge 0 && $idx -lt ${#USB_DEVICES[@]} ]]; then
+                        SELECTED_DEV="${USB_DEVICES[$idx]}"
+                        return 0
+                    fi
+                fi
+                msg_warn "Opção inválida. Tente novamente."
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+BOOT_MODE=""
+
+menu_select_mode() {
+    local dev="$1"
+    local model
+    model=$(get_usb_model "$dev")
+
+    while true; do
+        clear_screen
+        draw_header
+
+        draw_section "Modo de Boot"
+
+        echo -e "  ${DIM}Dispositivo selecionado:${RESET} ${WHITE}${BOLD}${dev}${RESET}  ${CYAN}${model}${RESET}"
+        echo
+
+        echo -e "  ${BOLD}${GREEN}[L]${RESET}  ${WHITE}BIOS Legado${RESET}"
+        echo -e "       ${DIM}Modo clássico (MBR). Compatível com ISOs antigas,${RESET}"
+        echo -e "       ${DIM}Linux/Windows gravados no modo legado.${RESET}"
+        echo
+
+        echo -e "  ${BOLD}${BLUE}[U]${RESET}  ${WHITE}UEFI${RESET}"
+        echo -e "       ${DIM}Modo moderno (GPT/EFI). Compatível com ISOs recentes,${RESET}"
+        echo -e "       ${DIM}Secure Boot desabilitado na simulação.${RESET}"
+        echo
+
+        echo -e "  ${BOLD}${YELLOW}[V]${RESET}  ${WHITE}Voltar${RESET}"
+        echo -e "  ${BOLD}${RED}[Q]${RESET}  ${WHITE}Sair${RESET}"
+        echo
+        draw_footer
+
+        tput cnorm 2>/dev/null || true
+        echo -ne "  ${BOLD}Escolha o modo de boot: ${RESET}"
+        local choice
+        read -r choice
+        tput civis 2>/dev/null || true
+
+        choice=$(echo "$choice" | tr '[:lower:]' '[:upper:]')
+
+        case "$choice" in
+            L) BOOT_MODE="bios"; return 0 ;;
+            U) BOOT_MODE="uefi"; return 0 ;;
+            V) return 1 ;;
+            Q) exit 0 ;;
+            *)
+                msg_warn "Opção inválida. Digite L, U, V ou Q."
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+launch_qemu() {
+    local dev="$1"
+    local mode="$2"
+    local model
+    model=$(get_usb_model "$dev")
+
+    clear_screen
+    draw_header
+
+    draw_section "Iniciando simulação de boot"
+
+    echo -e "  ${DIM}Dispositivo :${RESET} ${WHITE}${BOLD}${dev}${RESET}  ${CYAN}${model}${RESET}"
+    if [[ "$mode" == "uefi" ]]; then
+        echo -e "  ${DIM}Modo        :${RESET} ${BLUE}${BOLD}UEFI${RESET} ${DIM}(OVMF)${RESET}"
+    else
+        echo -e "  ${DIM}Modo        :${RESET} ${GREEN}${BOLD}BIOS Legado${RESET} ${DIM}(MBR)${RESET}"
+    fi
+    echo -e "  ${DIM}RAM         :${RESET} ${WHITE}${RAM_MB} MB${RESET}"
+    echo
+
+    local use_sudo=false
+    if [[ ! -r "$dev" ]]; then
+        msg_warn "Permissão negada para ${dev}. Será solicitado sudo."
+        use_sudo=true
+    fi
+
+    msg_info "Aguarde, iniciando QEMU..."
+    echo
+    msg_warn "Feche a janela do QEMU ou pressione Ctrl+Alt+Q para encerrar."
+    echo
+    tput cnorm 2>/dev/null || true
+
+    local qemu_args=(
+        -name "biosterm - ${dev}"
+        -m "${RAM_MB}"
+        -drive "file=${dev},format=raw,if=virtio,cache=none"
+        -boot order=c,menu=on
+        -display sdl
+        -accel kvm
+        -cpu host
+        -machine type=pc
+    )
+
+    if [[ "$mode" == "uefi" ]]; then
+        if [[ ! -f "$OVMF_PATH" ]]; then
+            msg_error "Firmware UEFI não encontrado em: ${OVMF_PATH}"
+            msg_info  "Instale o pacote 'edk2-ovmf' e tente novamente."
+            echo
+            read -rp "  Pressione Enter para voltar..."
+            return 1
+        fi
+        qemu_args+=( -bios "${OVMF_PATH}" )
+        qemu_args=("${qemu_args[@]/type=pc/type=q35}")
+    fi
+
+    local exit_code=0
+    if [[ "$use_sudo" == true ]]; then
+        sudo "$QEMU_BIN" "${qemu_args[@]}" 2>&1 || exit_code=$?
+    else
+        "$QEMU_BIN" "${qemu_args[@]}" 2>&1 || exit_code=$?
+    fi
+
+    if [[ $exit_code -eq 0 ]]; then
+        echo
+        msg_ok "Simulação encerrada com sucesso."
+    else
+        echo
+        msg_error "O QEMU encerrou com erro (código: ${exit_code}) ou foi fechado forçadamente."
+    fi
+
+    echo
+    echo -e "  ${DIM}Pressione Enter para voltar ao menu...${RESET}"
+    tput cnorm 2>/dev/null || true
+    read -r
+}
+
+check_deps() {
+    local missing=()
+
+    command -v "$QEMU_BIN" &>/dev/null || missing+=("$QEMU_BIN")
+    command -v lsblk       &>/dev/null || missing+=("lsblk (util-linux)")
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo
+        msg_error "Dependências faltando:"
+        for dep in "${missing[@]}"; do
+            echo -e "    ${RED}✘${RESET}  $dep"
+        done
+        echo
+        msg_info "Instale com: sudo pacman -S qemu-full edk2-ovmf util-linux"
+        echo
+        exit 1
+    fi
+}
+
+main() {
+    check_deps
+
+    while true; do
+        menu_select_device
+
+        if ! menu_select_mode "$SELECTED_DEV"; then
+            continue
+        fi
+
+        launch_qemu "$SELECTED_DEV" "$BOOT_MODE"
+    done
+}
+
+main "$@"
