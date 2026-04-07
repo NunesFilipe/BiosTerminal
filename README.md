@@ -81,7 +81,7 @@ sudo dnf install qemu-system-x86 edk2-ovmf
 ### 2. Clone the repository
 
 ```bash
-git clone https://github.com/filipeaguiarrod/BiosTerminal.git
+git clone https://github.com/NunesFilipe/BiosTerminal.git
 cd BiosTerminal
 ```
 
@@ -228,7 +228,7 @@ This project is licensed under the **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2026 Filipe Aguiar
+Copyright (c) 2026 Filipe Nunes
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -252,5 +252,5 @@ SOFTWARE.
 ---
 
 <div align="center">
-Made with ❤️ by <a href="https://github.com/filipeaguiarrod">Filipe Aguiar</a>
+Made with ❤️ by <a href="https://github.com/NunesFilipe">Filipe Nunes</a>
 </div>
