@@ -122,7 +122,7 @@ get_usb_model() {
     if [[ -f "$model_file" ]]; then
         local raw
         raw=$(< "$model_file")
-        printf '%s' "${raw}" | tr -cd '[:alnum:] _.-()'
+        printf '%s' "${raw}" | sed 's/[^a-zA-Z0-9 _.()+-]//g'
         echo
     else
         echo "Dispositivo USB"
