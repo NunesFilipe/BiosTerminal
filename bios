@@ -13,13 +13,14 @@ YELLOW="\033[1;33m"
 BLUE="\033[1;34m"
 CYAN="\033[1;36m"
 WHITE="\033[1;37m"
-BG_BLUE="\033[44m"
-BG_BLACK="\033[40m"
 
 OVMF_PATH="/usr/share/edk2/x64/OVMF.4m.fd"
 QEMU_BIN="qemu-system-x86_64"
 RAM_MB=1024
 VERSION="1.0"
+
+readonly ALLOWED_DEV_PREFIX="/dev/"
+readonly ALLOWED_SYS_PREFIX="/sys/block/"
 
 clear_screen() {
     clear
@@ -112,9 +113,17 @@ get_usb_model() {
     local base
     base=$(basename "$dev")
 
-    local model_file="/sys/block/${base}/device/model"
+    if [[ ! "$base" =~ ^[a-zA-Z0-9]+$ ]]; then
+        echo "Dispositivo USB"
+        return
+    fi
+
+    local model_file="${ALLOWED_SYS_PREFIX}${base}/device/model"
     if [[ -f "$model_file" ]]; then
-        cat "$model_file" | xargs
+        local raw
+        raw=$(< "$model_file")
+        printf '%s' "${raw}" | tr -cd '[:alnum:] _.-()'
+        echo
     else
         echo "Dispositivo USB"
     fi
@@ -236,6 +245,29 @@ menu_select_mode() {
 launch_qemu() {
     local dev="$1"
     local mode="$2"
+
+    if [[ ! "$dev" =~ ^/dev/[a-zA-Z0-9]+$ ]]; then
+        msg_error "Dispositivo inválido: ${dev}"
+        sleep 2
+        return 1
+    fi
+
+    if [[ ! "$RAM_MB" =~ ^[0-9]+$ ]] || (( RAM_MB < 128 || RAM_MB > 65536 )); then
+        msg_error "Valor de RAM inválido: ${RAM_MB}. Use um valor entre 128 e 65536."
+        sleep 2
+        return 1
+    fi
+
+    if [[ "$mode" == "uefi" ]]; then
+        if [[ ! "$OVMF_PATH" =~ ^/ ]] || [[ ! -f "$OVMF_PATH" ]]; then
+            msg_error "Firmware UEFI não encontrado ou path inválido: ${OVMF_PATH}"
+            msg_info  "Instale o pacote 'edk2-ovmf' e tente novamente."
+            echo
+            read -rp "  Pressione Enter para voltar..."
+            return 1
+        fi
+    fi
+
     local model
     model=$(get_usb_model "$dev")
 
@@ -253,10 +285,10 @@ launch_qemu() {
     echo -e "  ${DIM}RAM         :${RESET} ${WHITE}${RAM_MB} MB${RESET}"
     echo
 
-    local use_sudo=false
+    local use_sudo=0
     if [[ ! -r "$dev" ]]; then
         msg_warn "Permissão negada para ${dev}. Será solicitado sudo."
-        use_sudo=true
+        use_sudo=1
     fi
 
     msg_info "Aguarde, iniciando QEMU..."
@@ -277,22 +309,15 @@ launch_qemu() {
     )
 
     if [[ "$mode" == "uefi" ]]; then
-        if [[ ! -f "$OVMF_PATH" ]]; then
-            msg_error "Firmware UEFI não encontrado em: ${OVMF_PATH}"
-            msg_info  "Instale o pacote 'edk2-ovmf' e tente novamente."
-            echo
-            read -rp "  Pressione Enter para voltar..."
-            return 1
-        fi
         qemu_args+=( -bios "${OVMF_PATH}" )
         qemu_args=("${qemu_args[@]/type=pc/type=q35}")
     fi
 
     local exit_code=0
-    if [[ "$use_sudo" == true ]]; then
-        sudo "$QEMU_BIN" "${qemu_args[@]}" 2>&1 || exit_code=$?
+    if (( use_sudo == 1 )); then
+        sudo "$QEMU_BIN" "${qemu_args[@]}" || exit_code=$?
     else
-        "$QEMU_BIN" "${qemu_args[@]}" 2>&1 || exit_code=$?
+        "$QEMU_BIN" "${qemu_args[@]}" || exit_code=$?
     fi
 
     if [[ $exit_code -eq 0 ]]; then
