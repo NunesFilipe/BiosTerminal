@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# BiosTerminal v1.0 - Bootable USB Drive Tester
+# Author: Filipe Nunes <https://github.com/NunesFilipe>
+# Source: https://github.com/NunesFilipe/BiosTerminal
+# License: MIT — free to use, modify and distribute with attribution.
 
 RESET="\033[0m"
 BOLD="\033[1m"

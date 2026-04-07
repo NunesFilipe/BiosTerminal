@@ -213,11 +213,22 @@ BiosTerminal/
 
 ## Contributing
 
-Contributions are welcome! Feel free to open issues or pull requests for:
+Contributions are welcome! This project is open source — feel free to fork, improve, and share.
+
+**One simple rule: always credit the original author.**
+
+Whether it's a small tweak or a major feature, please keep the original authorship notice in the script header and in your project's README. That's all that's asked.
+
+Feel free to open issues or pull requests for:
 - New features (e.g., ARM support, custom RAM configuration)
 - Bug fixes
 - Distribution-specific improvements
 - UI enhancements
+
+If you fork or redistribute this project, please include:
+```
+Originally created by Filipe Nunes — https://github.com/NunesFilipe/BiosTerminal
+```
 
 ---
 
