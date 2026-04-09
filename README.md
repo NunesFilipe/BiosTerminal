@@ -3,7 +3,7 @@
 ```
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
-║          🖥   B I O S   T E R M I N A L                 ║
+║          🖥   B O O T   T E R M I N A L                 ║
 ║              Bootable USB Drive Tester                   ║
 ║                       v1.0                               ║
 ║                                                          ║
@@ -21,9 +21,9 @@
 
 ---
 
-## What is BiosTerminal?
+## What is BootTerminal?
 
-**BiosTerminal** is a lightweight Bash TUI (Terminal User Interface) tool that lets you boot and test any physical USB drive using **QEMU** — directly from your terminal, in seconds. No need to configure VirtualBox, no need to reboot your machine.
+**BootTerminal** is a lightweight Bash TUI (Terminal User Interface) tool that lets you boot and test any physical USB drive using **QEMU** — directly from your terminal, in seconds. No need to configure VirtualBox, no need to reboot your machine.
 
 It automatically detects all connected USB drives, lets you choose between **Legacy BIOS** (MBR) and **UEFI** (GPT/EFI) boot modes, and launches a QEMU window simulating a real boot from that device.
 
@@ -81,8 +81,8 @@ sudo dnf install qemu-system-x86 edk2-ovmf
 ### 2. Clone the repository
 
 ```bash
-git clone https://github.com/NunesFilipe/BiosTerminal.git
-cd BiosTerminal
+git clone https://github.com/NunesFilipe/BootTerminal.git
+cd BootTerminal
 ```
 
 ### 3. Install the script globally
@@ -126,7 +126,7 @@ bios
 
 ### Stopping a boot session
 
-Close the QEMU window directly, or press `Ctrl+Alt+Q` inside the QEMU window. You will be returned to the BiosTerminal menu automatically.
+Close the QEMU window directly, or press `Ctrl+Alt+Q` inside the QEMU window. You will be returned to the BootTerminal menu automatically.
 
 ---
 
@@ -143,7 +143,7 @@ Close the QEMU window directly, or press `Ctrl+Alt+Q` inside the QEMU window. Yo
 
 ## OVMF Firmware Path
 
-By default, BiosTerminal looks for the OVMF firmware at:
+By default, BootTerminal looks for the OVMF firmware at:
 
 ```
 /usr/share/edk2/x64/OVMF.4m.fd
@@ -204,7 +204,7 @@ Install the OVMF package for your distribution and/or update `OVMF_PATH` in the 
 ## Project Structure
 
 ```
-BiosTerminal/
+BootTerminal/
 ├── bios        # Main executable script
 └── README.md   # This file
 ```
@@ -227,7 +227,7 @@ Feel free to open issues or pull requests for:
 
 If you fork or redistribute this project, please include:
 ```
-Originally created by Filipe Nunes — https://github.com/NunesFilipe/BiosTerminal
+Originally created by Filipe Nunes — https://github.com/NunesFilipe/BootTerminal
 ```
 
 ---

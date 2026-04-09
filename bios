@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# BiosTerminal v1.0 - Bootable USB Drive Tester
+# BootTerminal v1.0 - Bootable USB Drive Tester
 # Author: Filipe Nunes <https://github.com/NunesFilipe>
-# Source: https://github.com/NunesFilipe/BiosTerminal
+# Source: https://github.com/NunesFilipe/BootTerminal
 # License: MIT — free to use, modify and distribute with attribution.
 
 RESET="\033[0m"
@@ -54,7 +54,7 @@ draw_header() {
     echo -e "${CYAN}${BOLD}"
     echo "  ╔══════════════════════════════════════════════════════════╗"
     echo "  ║                                                          ║"
-    echo "  ║          🖥   B I O S   T E R M I N A L                 ║"
+    echo "  ║          🖥   B O O T   T E R M I N A L                 ║"
     echo "  ║            Testador de Pendrive Bootável                 ║"
     echo "  ║                    v${VERSION}                                 ║"
     echo "  ║                                                          ║"
@@ -298,7 +298,7 @@ launch_qemu() {
     tput cnorm 2>/dev/null || true
 
     local qemu_args=(
-        -name "biosterm - ${dev}"
+        -name "bootterm - ${dev}"
         -m "${RAM_MB}"
         -drive "file=${dev},format=raw,if=virtio,cache=none"
         -boot order=c,menu=on
