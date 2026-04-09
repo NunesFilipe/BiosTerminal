@@ -1,61 +1,52 @@
 <div align="center">
 
-```
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║          🖥   B O O T   T E R M I N A L                 ║
-║              Bootable USB Drive Tester                   ║
-║                       v1.0                               ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
-```
+<h1>🖥️ BootTerminal</h1>
 
-**Test your bootable USB drives directly from the terminal — no VirtualBox, no GUI setup.**
+<p><strong>Test bootable USB drives directly from your terminal — no VirtualBox, no GUI, no rebooting.</strong></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NunesFilipe/BootTerminal)
 [![Shell: Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
-[![Powered by QEMU](https://img.shields.io/badge/Powered%20by-QEMU-orange?logo=qemu)](https://www.qemu.org/)
+[![Powered by QEMU](https://img.shields.io/badge/Powered%20by-QEMU-orange)](https://www.qemu.org/)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-blue?logo=linux)](https://kernel.org/)
 
 </div>
 
 ---
 
-## What is BootTerminal?
+## Overview
 
-**BootTerminal** is a lightweight Bash TUI (Terminal User Interface) tool that lets you boot and test any physical USB drive using **QEMU** — directly from your terminal, in seconds. No need to configure VirtualBox, no need to reboot your machine.
+**BootTerminal** is a lightweight, open-source Bash TUI tool that lets you boot and test any physical USB drive using **QEMU** — directly from your terminal, in seconds.
 
-It automatically detects all connected USB drives, lets you choose between **Legacy BIOS** (MBR) and **UEFI** (GPT/EFI) boot modes, and launches a QEMU window simulating a real boot from that device.
+It automatically detects connected USB drives, lets you choose between **Legacy BIOS** (MBR) and **UEFI** (GPT/EFI) boot modes, and launches a QEMU window simulating a real boot from that device.
 
-Perfect for:
-- Verifying that bootable USB drives actually boot
-- Testing Linux/Windows ISOs written to USB
-- Quickly checking if a pendrive was correctly flashed
-- Developers and sysadmins who need a fast boot testing workflow
+> No virtual machine setup. No rebooting. Just plug and test.
 
 ---
 
 ## Features
 
-- 🔍 **Auto-detection** of all connected USB block devices
-- 🖥️ **Dual boot mode**: Legacy BIOS (MBR) and UEFI (OVMF/EFI)
-- ⚡ **KVM acceleration** for near-native boot speed
-- 🎨 **Colorful TUI** with intuitive keyboard navigation
-- 🔄 **Rescan** USB devices without restarting the tool
-- 🛡️ **Safe**: read-only raw disk access, no data is written
-- 📦 **Zero dependencies** beyond QEMU and standard Linux tools
+| Feature | Description |
+|---|---|
+| 🔍 Auto-detection | Automatically lists all connected USB block devices |
+| 🖥️ Dual boot mode | Supports Legacy BIOS (MBR) and UEFI (OVMF/EFI) |
+| ⚡ KVM acceleration | Near-native boot speed with hardware virtualization |
+| 🎨 Colorful TUI | Intuitive terminal interface with keyboard navigation |
+| 🔄 Rescan | Rescan USB devices without restarting the tool |
+| 🛡️ Safe | Read-only raw disk access — no data is written |
+| 📦 Minimal deps | Only requires QEMU and standard Linux tools |
 
 ---
 
 ## Requirements
 
-| Dependency | Package (Arch) | Package (Debian/Ubuntu) |
+| Dependency | Arch Linux | Debian / Ubuntu |
 |---|---|---|
 | `qemu-system-x86_64` | `qemu-full` | `qemu-system-x86` |
 | `lsblk` | `util-linux` *(pre-installed)* | `util-linux` *(pre-installed)* |
-| OVMF firmware *(UEFI only)* | `edk2-ovmf` | `ovmf` |
+| OVMF *(UEFI only)* | `edk2-ovmf` | `ovmf` |
 
-> **KVM** is strongly recommended for performance. Your CPU must support hardware virtualization (Intel VT-x / AMD-V), and the `kvm` kernel module must be loaded.
+> **KVM** is strongly recommended. Your CPU must support Intel VT-x or AMD-V, and the `kvm` kernel module must be loaded.
 
 ---
 
@@ -65,7 +56,7 @@ Perfect for:
 
 **Arch Linux / Manjaro:**
 ```bash
-sudo pacman -S qemu-full edk2-ovmf util-linux
+sudo pacman -S qemu-full edk2-ovmf
 ```
 
 **Debian / Ubuntu / Mint:**
@@ -85,119 +76,126 @@ git clone https://github.com/NunesFilipe/BootTerminal.git
 cd BootTerminal
 ```
 
-### 3. Install the script globally
+### 3. Install globally
 
 ```bash
 sudo cp bios /usr/local/bin/bios
 sudo chmod +x /usr/local/bin/bios
 ```
 
-### 4. (Recommended) Grant USB device access without sudo
-
-Add your user to the `disk` group so you can access block devices without `sudo`:
+### 4. (Recommended) Grant USB access without sudo
 
 ```bash
 sudo usermod -aG disk $USER
 ```
 
-> **Important:** Log out and log back in for the group change to take effect.
+> Log out and back in for the group change to take effect.
 
 ---
 
 ## Usage
 
-Simply run:
-
 ```bash
 bios
 ```
 
-### Navigation
+### Key bindings
 
 | Key | Action |
-|-----|--------|
-| `1`, `2`, ... `N` | Select a USB drive from the list |
+|---|---|
+| `1` – `N` | Select a USB drive |
+| `L` | Boot in Legacy BIOS mode (MBR) |
+| `U` | Boot in UEFI mode (GPT/EFI) |
 | `R` | Rescan connected USB devices |
-| `L` | Boot in **Legacy BIOS** mode (MBR) |
-| `U` | Boot in **UEFI** mode (GPT/EFI) |
 | `V` | Go back to the previous menu |
 | `Q` | Quit |
 | `Ctrl+C` | Force quit at any time |
 
-### Stopping a boot session
-
-Close the QEMU window directly, or press `Ctrl+Alt+Q` inside the QEMU window. You will be returned to the BootTerminal menu automatically.
+To stop a boot session, close the QEMU window or press `Ctrl+Alt+Q` inside it.
 
 ---
 
 ## How It Works
 
-1. **Detection**: Uses `lsblk -d -P -o NAME,SIZE,TRAN` to list block devices. Filters only USB-connected whole disks (no partitions).
-2. **Model info**: Reads `/sys/block/<device>/device/model` for the human-readable drive name.
+1. **Detection** — Uses `lsblk -d -P -o NAME,SIZE,TRAN` to list USB block devices (whole disks only, no partitions).
+2. **Model info** — Reads `/sys/block/<device>/device/model` for the human-readable drive name.
 3. **QEMU launch**:
-   - **Legacy mode**: `qemu-system-x86_64` with `-machine type=pc`, KVM acceleration, and the USB drive as a raw virtio disk.
-   - **UEFI mode**: Same as above but with `-machine type=q35` and `-bios /usr/share/edk2/x64/OVMF.4m.fd`.
-4. **Permissions**: If the device is not readable by the current user, `sudo` is used automatically.
+   - **Legacy BIOS**: `qemu-system-x86_64` with `-machine type=pc` and KVM acceleration.
+   - **UEFI**: Same, but with `-machine type=q35` and `-bios /usr/share/edk2/x64/OVMF.4m.fd`.
+4. **Permissions** — If the device isn't readable by the current user, `sudo` is invoked automatically.
 
 ---
 
 ## OVMF Firmware Path
 
-By default, BootTerminal looks for the OVMF firmware at:
+By default, BootTerminal looks for OVMF at:
 
 ```
 /usr/share/edk2/x64/OVMF.4m.fd
 ```
 
-If your distribution places it elsewhere, edit the `OVMF_PATH` variable at the top of the `bios` script:
+If your distro places it elsewhere, update `OVMF_PATH` at the top of the `bios` script:
 
 ```bash
-OVMF_PATH="/usr/share/OVMF/OVMF_CODE.fd"  # Debian/Ubuntu path example
+OVMF_PATH="/usr/share/OVMF/OVMF_CODE.fd"  # Debian/Ubuntu example
 ```
 
 ---
 
 ## Troubleshooting
 
-### "Permission denied" when accessing `/dev/sdX`
+<details>
+<summary><strong>Permission denied on /dev/sdX</strong></summary>
 
-Make sure your user is in the `disk` group and you have logged out and back in:
+Add your user to the `disk` group:
 
-```bash
-groups $USER  # should include 'disk'
-```
-
-If not, run:
 ```bash
 sudo usermod -aG disk $USER
 ```
-Then log out and log back in.
 
-### QEMU window doesn't open
+Then log out and back in. Verify with:
 
-Ensure your display server (X11 or XWayland) is running and `qemu-system-x86_64` was compiled with SDL support:
+```bash
+groups $USER
+```
+
+</details>
+
+<details>
+<summary><strong>QEMU window doesn't open</strong></summary>
+
+Make sure your display server (X11 or XWayland) is running and QEMU was compiled with SDL support:
 
 ```bash
 qemu-system-x86_64 -display help
 ```
 
-### KVM not available
+</details>
 
-Check if the kvm module is loaded:
+<details>
+<summary><strong>KVM not available</strong></summary>
+
+Check if the module is loaded:
 
 ```bash
 lsmod | grep kvm
 ```
 
 Load it manually if needed:
+
 ```bash
-sudo modprobe kvm_intel   # Intel CPUs
-sudo modprobe kvm_amd     # AMD CPUs
+sudo modprobe kvm_intel   # Intel
+sudo modprobe kvm_amd     # AMD
 ```
 
-### UEFI firmware not found
+</details>
 
-Install the OVMF package for your distribution and/or update `OVMF_PATH` in the script to match the correct path.
+<details>
+<summary><strong>UEFI firmware not found</strong></summary>
+
+Install the OVMF package for your distro and update `OVMF_PATH` in the script accordingly.
+
+</details>
 
 ---
 
@@ -206,26 +204,25 @@ Install the OVMF package for your distribution and/or update `OVMF_PATH` in the 
 ```
 BootTerminal/
 ├── bios        # Main executable script
-└── README.md   # This file
+└── README.md   # Documentation
 ```
 
 ---
 
 ## Contributing
 
-Contributions are welcome! This project is open source — feel free to fork, improve, and share.
+BootTerminal is **open source** and contributions are welcome!
 
-**One simple rule: always credit the original author.**
+Whether it's a bug fix, a new feature, or a UI improvement — feel free to fork the repository, make your changes, and open a pull request.
 
-Whether it's a small tweak or a major feature, please keep the original authorship notice in the script header and in your project's README. That's all that's asked.
+**Ideas for contributions:**
+- ARM / RISC-V architecture support
+- Custom RAM and CPU configuration via flags
+- Distribution-specific install scripts
+- UI improvements and accessibility
 
-Feel free to open issues or pull requests for:
-- New features (e.g., ARM support, custom RAM configuration)
-- Bug fixes
-- Distribution-specific improvements
-- UI enhancements
+If you fork or redistribute this project, please keep the original authorship notice in the script header:
 
-If you fork or redistribute this project, please include:
 ```
 Originally created by Filipe Nunes — https://github.com/NunesFilipe/BootTerminal
 ```
@@ -234,31 +231,7 @@ Originally created by Filipe Nunes — https://github.com/NunesFilipe/BootTermin
 
 ## License
 
-This project is licensed under the **MIT License**.
-
-```
-MIT License
-
-Copyright (c) 2026 Filipe Nunes
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for more information.
 
 ---
 
